@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../utils/validator.dart';
 import '../widgets/custom_elevated_button.dart';
@@ -77,6 +78,44 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  Future<void> signInWithGoogle(context) async {
+    setIsLoading();
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth?.accessToken,
+        idToken: googleAuth?.idToken,
+      );
+
+      // Once signed in, return the UserCredential
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      CustomScaffoldSnackbar.of(context)
+          .show('Signed in successfully', SnackBarType.success);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential') {
+        CustomScaffoldSnackbar.of(context).show(
+            'The email is already associated with another account',
+            SnackBarType.error);
+      } else if (e.code == 'invalid-credential') {
+        CustomScaffoldSnackbar.of(context)
+            .show('Error signing in. Invalid credentials', SnackBarType.error);
+      }
+      print(e);
+    } catch (e) {
+      CustomScaffoldSnackbar.of(context)
+          .show('Error signing in. Please try again', SnackBarType.error);
+      print(e);
+    }
+    setIsLoading();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -136,6 +175,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       },
                     ),
                     textInputAction: TextInputAction.done,
+                    keyboardType: TextInputType.visiblePassword,
                     onFieldSubmitted: (_) => _onTapSubmit(context),
                     validator: (value) => Validator.validatePassword(value!),
                   ),
@@ -169,7 +209,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     width: double.infinity,
                     margin: const EdgeInsets.only(top: 4),
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed:
+                          isLoading ? null : () => signInWithGoogle(context),
                       style: ButtonStyle(
                         shape: MaterialStateProperty.all(
                           RoundedRectangleBorder(
@@ -179,29 +220,40 @@ class _SignInScreenState extends State<SignInScreen> {
                         backgroundColor:
                             const MaterialStatePropertyAll(Colors.white),
                       ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 36,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CachedNetworkImage(
-                                imageUrl:
-                                    'http://pngimg.com/uploads/google/google_PNG19635.png',
-                                fit: BoxFit.cover),
-                            const SizedBox(
-                              width: 5.0,
-                            ),
-                            const Text(
-                              "Sign in with Google",
-                              style: TextStyle(
-                                color: Colors.black54,
+                      child: isLoading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Theme.of(context).primaryColor,
+                                strokeWidth: 3,
+                              ),
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              height: 36,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  isLoading
+                                      ? const CircularProgressIndicator()
+                                      : CachedNetworkImage(
+                                          imageUrl:
+                                              'http://pngimg.com/uploads/google/google_PNG19635.png',
+                                          fit: BoxFit.cover),
+                                  const SizedBox(
+                                    width: 5.0,
+                                  ),
+                                  const Text(
+                                    "Sign in with Google",
+                                    style: TextStyle(
+                                      color: Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
                     ),
                   ),
                   GestureDetector(

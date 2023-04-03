@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../widgets/custom_elevated_button.dart';
@@ -20,7 +19,6 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   FirebaseAuth auth = FirebaseAuth.instance;
-  FirebaseStorage storage = FirebaseStorage.instance;
 
   bool isLoading = false;
 
@@ -155,6 +153,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     controller: _passwordController,
                     obscureText: _passwordVisible,
                     focusNode: _passwordFocusNode,
+                    keyboardType: TextInputType.visiblePassword,
                     labelText: "Password",
                     suffixIcon: IconButton(
                       icon: Icon(

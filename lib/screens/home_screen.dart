@@ -111,6 +111,47 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void onTapDeleteAccount(context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+            'Are you sure you want to delete this account? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              try {
+                await FirebaseAuth.instance.currentUser?.delete();
+                CustomScaffoldSnackbar.of(context).show(
+                  'Your account has been deleted successfully!',
+                  SnackBarType.success,
+                );
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SignInScreen()),
+                  (route) => false,
+                );
+              } on FirebaseAuthException catch (e) {
+                CustomScaffoldSnackbar.of(context).show(
+                  'Failed to delete your account. ${e.message}',
+                  SnackBarType.error,
+                );
+              }
+            },
+            child: const Text('Yes, Delete'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -226,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               focusNode: _imageFocusNode,
                               labelText: 'Photo URL',
                               suffixIcon: const Icon(Icons.link),
-                              keyboardType: TextInputType.emailAddress,
+                              keyboardType: TextInputType.url,
                               onFieldSubmitted: (_) => onTapUpdate(context),
                               validator: (value) {
                                 if (value!.isEmpty) {
@@ -246,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             Container(
                               width: double.infinity,
-                              margin: const EdgeInsets.only(top: 12),
+                              margin: const EdgeInsets.only(top: 4),
                               child: ElevatedButton(
                                 onPressed: () {
                                   FirebaseAuth.instance.signOut();
@@ -275,8 +316,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
+                            Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(top: 4),
+                              child: ElevatedButton(
+                                onPressed: () => onTapDeleteAccount(context),
+                                style: ButtonStyle(
+                                  shape: MaterialStateProperty.all(
+                                    RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4.0),
+                                    ),
+                                  ),
+                                  backgroundColor: MaterialStateProperty.all(
+                                      Theme.of(context).colorScheme.error),
+                                ),
+                                child: const Text(
+                                  'Delete My Account',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
                             const SizedBox(
-                              height: 32.0,
+                              height: 16.0,
                             ),
                           ],
                         ),
