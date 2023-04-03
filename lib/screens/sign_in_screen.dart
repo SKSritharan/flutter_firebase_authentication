@@ -1,7 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../utils/validator.dart';
+import '../widgets/custom_elevated_button.dart';
+import '../widgets/custom_snackbar.dart';
 import '../widgets/custom_textformfield.dart';
 import './forgot_password_screen.dart';
 import './sign_up_screen.dart';
@@ -16,6 +19,15 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
+  FirebaseAuth auth = FirebaseAuth.instance;
+  bool isLoading = false;
+
+  void setIsLoading() {
+    setState(() {
+      isLoading = !isLoading;
+    });
+  }
+
   final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = true;
 
@@ -32,10 +44,36 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  void _onTapSubmit() {
+  Future<void> _onTapSubmit(context) async {
     FocusScope.of(context).unfocus();
     if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+      setIsLoading();
+      try {
+        await auth.signInWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+        CustomScaffoldSnackbar.of(context)
+            .show('Login Success!', SnackBarType.success);
+        Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'user-not-found') {
+          CustomScaffoldSnackbar.of(context).show(
+              'There is no user record corresponding to this email address',
+              SnackBarType.error);
+        } else if (e.code == 'wrong-password') {
+          CustomScaffoldSnackbar.of(context)
+              .show('The password is invalid', SnackBarType.error);
+        } else if (e.code == 'network-request-failed') {
+          CustomScaffoldSnackbar.of(context).show(
+              'An error occurred. Please check your internet connection and try again',
+              SnackBarType.error);
+        }
+      } catch (e) {
+        CustomScaffoldSnackbar.of(context)
+            .show('Login failed. Please try again later.', SnackBarType.error);
+      }
+      setIsLoading();
     }
   }
 
@@ -98,7 +136,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       },
                     ),
                     textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _onTapSubmit(),
+                    onFieldSubmitted: (_) => _onTapSubmit(context),
                     validator: (value) => Validator.validatePassword(value!),
                   ),
                   GestureDetector(
@@ -121,21 +159,10 @@ class _SignInScreenState extends State<SignInScreen> {
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.only(top: 24),
-                    child: ElevatedButton(
-                      onPressed: () => _onTapSubmit(),
-                      style: ButtonStyle(
-                        shape: MaterialStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4.0),
-                          ),
-                        ),
-                      ),
-                      child: const Text(
-                        "Login",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    child: CustomElevatedButton(
+                      isLoading: isLoading,
+                      onPressed: () => _onTapSubmit(context),
+                      text: 'Login',
                     ),
                   ),
                   Container(

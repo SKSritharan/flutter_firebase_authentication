@@ -1,7 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_firebase_authentication/widgets/custom_image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
+import '../widgets/custom_elevated_button.dart';
 import '../utils/validator.dart';
+import '../widgets/custom_snackbar.dart';
 import '../widgets/custom_textformfield.dart';
 import './sign_in_screen.dart';
 import './home_screen.dart';
@@ -15,6 +19,17 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  FirebaseAuth auth = FirebaseAuth.instance;
+  FirebaseStorage storage = FirebaseStorage.instance;
+
+  bool isLoading = false;
+
+  void setIsLoading() {
+    setState(() {
+      isLoading = !isLoading;
+    });
+  }
+
   final _formKey = GlobalKey<FormState>();
   bool _passwordVisible = true;
 
@@ -25,7 +40,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _userImage = 'assets/images/default_user.png';
+  String _userImage = 'http://schooling.templatecookie.com/images/default.png';
 
   @override
   void dispose() {
@@ -35,10 +50,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _onTapSubmit() {
+  Future<void> _onTapSubmit(context) async {
     FocusScope.of(context).unfocus();
     if (_formKey.currentState!.validate()) {
-      Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+      setIsLoading();
+      try {
+        await auth.createUserWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+
+        await auth.currentUser!.updateDisplayName(_nameController.text.trim());
+        await auth.currentUser!.updatePhotoURL(_userImage);
+
+        CustomScaffoldSnackbar.of(context)
+            .show('Register Success!', SnackBarType.success);
+        Navigator.of(context).pushReplacementNamed(HomeScreen.routeName);
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          CustomScaffoldSnackbar.of(context)
+              .show('Email is already taken', SnackBarType.error);
+        } else if (e.code == 'network-request-failed') {
+          CustomScaffoldSnackbar.of(context).show(
+              'An error occurred. Please check your internet connection and try again',
+              SnackBarType.error);
+        }
+      } catch (e) {
+        CustomScaffoldSnackbar.of(context).show(
+            'Register failed. Please try again later.', SnackBarType.error);
+        print(e);
+      }
+      setIsLoading();
     }
   }
 
@@ -82,13 +124,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         width: 2.0,
                       ),
                     ),
-                    child: CustomImagePicker(
-                      defaultImage: Image.asset(_userImage),
-                      onImageSelected: (value) {
-                        setState(() {
-                          _userImage = value;
-                        });
-                      },
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundImage: CachedNetworkImageProvider(_userImage),
                     ),
                   ),
                   CustomTextFormField(
@@ -131,27 +169,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       },
                     ),
                     textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _onTapSubmit(),
+                    onFieldSubmitted: (_) => _onTapSubmit(context),
                     validator: (value) => Validator.validatePassword(value!),
                   ),
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.only(top: 24),
-                    child: ElevatedButton(
-                      onPressed: () => _onTapSubmit(),
-                      style: ButtonStyle(
-                        shape: MaterialStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4.0),
-                          ),
-                        ),
-                      ),
-                      child: const Text(
-                        "Signup",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    child: CustomElevatedButton(
+                      isLoading: isLoading,
+                      onPressed: () => _onTapSubmit(context),
+                      text: 'Signup',
                     ),
                   ),
                   GestureDetector(
