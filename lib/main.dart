@@ -24,6 +24,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.indigo,
         fontFamily: 'Lato',
       ),
+      debugShowCheckedModeBanner: false,
       home: const SplashScreen(),
       routes: {
         SignInScreen.routeName: (ctx) => const SignInScreen(),

@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight: MediaQuery.of(context).size.height +
-                  80 -
+                  100 -
                   AppBar().preferredSize.height -
                   MediaQuery.of(context).padding.top -
                   MediaQuery.of(context).padding.bottom,
@@ -287,7 +287,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             Container(
                               width: double.infinity,
-                              margin: const EdgeInsets.only(top: 4),
                               child: ElevatedButton(
                                 onPressed: () {
                                   FirebaseAuth.instance.signOut();
@@ -318,7 +317,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             Container(
                               width: double.infinity,
-                              margin: const EdgeInsets.only(top: 4),
                               child: ElevatedButton(
                                 onPressed: () => onTapDeleteAccount(context),
                                 style: ButtonStyle(
@@ -339,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             const SizedBox(
-                              height: 16.0,
+                              height: 32.0,
                             ),
                           ],
                         ),
